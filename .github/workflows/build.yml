@@ -1,0 +1,62 @@
+name: Build Passforge Windows
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'zulu'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+        shell: bash
+
+      - name: Download Azul Zulu JRE 21
+        run: |
+          curl -L -o zulu21-jre.zip "https://cdn.azul.com/zulu/bin/zulu21.38.21-ca-jre21.0.5-win_x64.zip"
+        shell: cmd
+
+      - name: Extract JRE to build/windows/jre
+        run: |
+          mkdir build\windows\jre
+          tar -xf zulu21-jre.zip -C build\windows\jre --strip-components=1
+        shell: cmd
+
+      - name: Build with Gradle
+        run: ./gradlew buildWindows --info --stacktrace
+        shell: bash
+
+      - name: List build directory
+        run: dir build
+        shell: cmd
+
+      - name: Upload artifacts
+        id: upload-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: passforge-build
+          path: |
+            build/windows/Passforge.exe
+            build/windows/jre/

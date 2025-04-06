@@ -1,0 +1,68 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'edu.sc.seis.launch4j' version '3.0.6'
+}
+
+group = 'net.talor1n.passforge'
+version = '0.1-alpha'
+
+repositories {
+    mavenCentral()
+    google()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    implementation 'com.formdev:flatlaf:3.5.1'
+    implementation 'com.formdev:flatlaf-intellij-themes:3.5.1'
+
+    implementation 'net.java.dev.jna:jna:5.17.0'
+    implementation 'net.java.dev.jna:jna-platform:5.17.0'
+
+    compileOnly("org.projectlombok:lombok:1.18.38")
+    annotationProcessor("org.projectlombok:lombok:1.18.38")
+
+    implementation 'com.google.code.gson:gson:2.12.1'
+    implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    manifest {
+        attributes(
+                'Main-Class': 'net.talor1n.passforge.Main'
+        )
+    }
+    archiveFileName = "${project.name}-${version}.jar"
+
+    // Разрешение конфликтов дублирующихся записей
+    mergeServiceFiles() // Объединяет файлы META-INF/services
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE // Исключает дублирующиеся классы
+}
+
+launch4j {
+    mainClassName = 'net.talor1n.passforge.Main'
+    icon = "${projectDir}/src/main/resources/img/key_icon.ico"
+    outfile = "Passforge.exe"
+    outputDir = "${buildDir}/windows"
+    bundledJrePath = 'jre'
+    jvmOptions = ['-Xmx512m']
+    dontWrapJar = false
+    fileDescription = "Passforge Password Manager"
+    companyName = "Talor1n"
+    version = "0.0.1"
+    textVersion = "0.0.1"
+}
+
+tasks.createExe.dependsOn tasks.shadowJar
+
+task buildWindows(dependsOn: ['clean', 'createExe']) {
+    group = 'build'
+    description = 'Full build chain: clean → obfuscate → create EXE'
+}
